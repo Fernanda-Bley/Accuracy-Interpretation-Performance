@@ -1,0 +1,32 @@
+main {
+    text-align: center;
+}
+
+.title {
+    font-size: 30px;
+}
+
+.instructions{
+    font-size: 20px;
+}
+
+#extrainstructions{
+    font-size: 20px;
+}
+
+#test{
+    font-size: 20px;
+}
+
+.objective {
+    position: relative;
+    text-align: center;
+    font-size: 20px;
+    overflow: visible;
+    background-color: rgba(160, 237, 237, 0.616);
+}
+
+#myButton{
+    background-color: blue; 
+    color: white;
+}
