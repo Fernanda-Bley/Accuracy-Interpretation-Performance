@@ -21,7 +21,7 @@ let maxTest = 5;
 let total_trials = {
 };
 
-for (let i = 1; i <= maxTest; i++) {
+for (let i = 0; i <= maxTest; i++) {
     total_trials[i] = []; 
 }
 
