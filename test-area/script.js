@@ -112,7 +112,7 @@ document.addEventListener('keydown', function(event) {
         pressCount = 0;
         lastPressTime = null;
         turn++;
-        test.textContent = `Trial ${turn}/${maxTest}`;
+        test.textContent = `Trial ${turn}/${maxTest - 1}`;
         instructions.textContent = "";
         circle.setAttribute('cx', 50);
         buttonPressed = false;
