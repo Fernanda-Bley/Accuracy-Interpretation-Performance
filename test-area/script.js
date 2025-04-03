@@ -16,8 +16,8 @@ const note_durations_ms = [
     187.5,    // Three thirty-second note
     125      // Sixteenth note
 ];
-let turn = 0; 
-let maxTest = 5;
+let turn = 1; 
+let maxTest = 6;
 let total_trials = {
 };
 
