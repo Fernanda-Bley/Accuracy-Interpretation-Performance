@@ -53,31 +53,43 @@ function downloadCSV(total_trials) {
     URL.revokeObjectURL(url);
 }
 
+let lastTimestamp = 0; // To keep track of the last timestamp
+let animationFrameId; // To store the requestAnimationFrame ID
+
 button.addEventListener('click', () => {
     clearInterval(interval);
     let wait = note_durations_ms[Math.floor(Math.random() * note_durations_ms.length)];
-    total_trials[turn].push(wait)
+    total_trials[turn].push(wait);
     
-
     // Reset position to the starting point if it has reached the end
     if (position >= 600) {
         position = 50;
     }
-    console.log(`Advancing at ${wait}ms`)
+    console.log(`Advancing at ${wait}ms`);
 
     // Circle Moves
-    interval = setInterval(() => {
-        if (position < 600) { 
-            position += 100; 
+    const moveCircle = (timestamp) => {
+        if (!lastTimestamp) lastTimestamp = timestamp; // Initialize lastTimestamp
+        const elapsed = timestamp - lastTimestamp;
+
+        // Move the circle based on the elapsed time
+        if (position < 660) {
+            position += (100 * elapsed) / wait; // Adjust the speed based on the wait time
             circle.setAttribute('cx', position);
+            lastTimestamp = timestamp; // Update lastTimestamp
+            animationFrameId = requestAnimationFrame(moveCircle); // Request the next frame
         } else {
             buttonPressed = true;
             instructions.textContent = "Click the right arrow 6 times at the frequency you think the red dot moved.";
-            clearInterval(interval);
+            cancelAnimationFrame(animationFrameId); // Stop the animation
+
+            // Reset for the next animation
+            lastTimestamp = 0; // Reset lastTimestamp for the next animation
+            position = 50; // Reset position for the next animation
         }
-    }, wait);
-    
-    
+    };
+
+    animationFrameId = requestAnimationFrame(moveCircle); // Start the animation
 });
 
 let lastPressTime = null;
@@ -103,19 +115,19 @@ document.addEventListener('keydown', function(event) {
         const total = timeDifferences.reduce((acc, curr) => acc + curr, 0);
         const mean = total / timeDifferences.length;
         total_trials[turn].push(mean); 
-        const error = total_trials[turn][0] - total_trials[turn][1]
+        const error = total_trials[turn][0] - total_trials[turn][1];
         total_trials[turn].push(error);
         console.log(`The time was ${total_trials[turn][0]} but the person got ${total_trials[turn][1]}, they have a ${Math.abs(total_trials[turn][2])} difference.`);
 
-        // restarting values
+        // Restarting values
         touches = {};
         pressCount = 0;
         lastPressTime = null;
         turn++;
         test.textContent = `Trial ${turn}/${maxTest}`;
         instructions.textContent = "";
-        circle.setAttribute('cx', 50);
-        buttonPressed = false;
+        circle.setAttribute('cx', 50); // Reset circle position
+        buttonPressed = false; // Reset button pressed state
 
         // After last round
         if (turn === maxTest) {
@@ -125,4 +137,3 @@ document.addEventListener('keydown', function(event) {
         }
     }
 });
-
