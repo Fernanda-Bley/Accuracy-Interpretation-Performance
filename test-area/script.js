@@ -1,51 +1,40 @@
-let position = 50; 
-const circle = document.querySelector('circle'); 
-const button = document.getElementById('myButton'); 
+const circle = document.getElementById('circle');
+const button = document.getElementById('myButton');
 const test = document.getElementById('test');
 const instructions = document.getElementById('extrainstructions');
-let interval; 
-const note_durations_ms = [
-    750,      // One and a half note
-    2000,     // Whole note
-    1500,     // Three quarters note
-    1000,     // Half note
-    750,      // Three eighth note
-    500,      // Quarter note
-    375,      // Three sixteenth note
-    250,      // Eighth note
-    187.5,    // Three thirty-second note
-    125      // Sixteenth note
-];
-let turn = 1; 
+let interval;
+
+let turn = 1;
 let maxTest = 5;
-let total_trials = {
-};
+let total_trials = {};
+
+let pressCount = 0;
+let lastPressTime = null;
+let touches = {};
+let buttonPressed = false;
+let position = 0;
+let maxPosition = 1050;
 
 for (let i = 1; i <= maxTest; i++) {
-    total_trials[i] = []; 
+    total_trials[i] = [];
 }
 
-let wait;
-let buttonPressed = false;
-
-
-// Created by BlackBox "How do I make a CSV from my object total_trials"
-
 function downloadCSV(total_trials) {
-    console.log("Starting trials");
     const csvRows = [];
-    csvRows.push(['true_milisecond', 'user_miliseconds', 'error_margin']);
+    csvRows.push(['true_pixels_per_second', 'user_pixels_per_second', 'error_margin']);
 
-    for (let i = 1; i < maxTest; i++) {
-        if (total_trials[i].length >= 3) {
-            csvRows.push([total_trials[i][0], total_trials[i][1], total_trials[i][2]]);
+    for (let i = 1; i <= maxTest; i++) {
+        if (total_trials[i].length >= 3) { 
+            const realPixelsPerSecond = total_trials[i][0];
+            const userPixelsPerSecond = total_trials[i][1];
+            const errorMargin = total_trials[i][2];
+            csvRows.push([realPixelsPerSecond, userPixelsPerSecond, errorMargin]);
         }
     }
 
     const csvString = csvRows.map(row => row.join(',')).join('\n');
     const blob = new Blob([csvString], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-    
     const a = document.createElement('a');
     a.setAttribute('href', url);
     a.setAttribute('download', 'trial_results.csv');
@@ -53,87 +42,87 @@ function downloadCSV(total_trials) {
     URL.revokeObjectURL(url);
 }
 
-let lastTimestamp = 0; // To keep track of the last timestamp
-let animationFrameId; // To store the requestAnimationFrame ID
+function startTrial() {
+    const durationSeconds = Math.floor(Math.random() * (60 - 2 + 1)) + 2;
+    const durationMs = durationSeconds * 1000;
+    const realPixelsPerSecond = maxPosition / durationSeconds;
 
-button.addEventListener('click', () => {
-    clearInterval(interval);
-    let wait = note_durations_ms[Math.floor(Math.random() * note_durations_ms.length)];
-    total_trials[turn].push(wait);
+    total_trials[turn].push(realPixelsPerSecond);
+
+    startMovingCircle(durationMs);
+
+    buttonPressed = true;
+}
+
+function startMovingCircle(durationMs) {
+    position = 0;
+    circle.style.left = `${position}px`;
     
-    // Reset position to the starting point if it has reached the end
-    if (position >= 600) {
-        position = 50;
-    }
-    console.log(`Advancing at ${wait}ms`);
-
-    // Circle Moves
-    const moveCircle = (timestamp) => {
-        if (!lastTimestamp) lastTimestamp = timestamp; // Initialize lastTimestamp
-        const elapsed = timestamp - lastTimestamp;
-
-        // Move the circle based on the elapsed time
-        if (position < 660) {
-            position += (100 * elapsed) / wait; // Adjust the speed based on the wait time
-            circle.setAttribute('cx', position);
-            lastTimestamp = timestamp; // Update lastTimestamp
-            animationFrameId = requestAnimationFrame(moveCircle); // Request the next frame
-        } else {
-            buttonPressed = true;
-            instructions.textContent = "Click the right arrow 6 times at the frequency you think the red dot moved.";
-            cancelAnimationFrame(animationFrameId); // Stop the animation
-
-            // Reset for the next animation
-            lastTimestamp = 0; // Reset lastTimestamp for the next animation
-            position = 50; // Reset position for the next animation
+    interval = setInterval(() => {
+        if (position < maxPosition) {
+            position++;
+            circle.style.left = `${position}px`;
         }
-    };
+    }, durationMs / maxPosition);
+    
+}
 
-    animationFrameId = requestAnimationFrame(moveCircle); // Start the animation
-});
 
-let lastPressTime = null;
-let pressCount = 0;
-let touches = {};
-
-document.addEventListener('keydown', function(event) {
-    if (event.code === 'ArrowRight' && pressCount < 6 && buttonPressed) {
+document.addEventListener('keydown', function (event) {
+    if (event.code === 'ArrowRight' && pressCount < 2 && buttonPressed) {
         console.log(`Right Arrow clicked: ${pressCount}`);
-        const currentTime = new Date().getTime(); // Get current time in milliseconds
+        const currentTime = new Date().getTime();
 
         if (lastPressTime !== null) {
-            let timeDifference = currentTime - lastPressTime; // Calculate time difference
-            touches[`(${pressCount - 1},${pressCount})`] = timeDifference; // Store in the object
+            let timeDifference = currentTime - lastPressTime;
+            touches[`(${pressCount - 1},${pressCount})`] = timeDifference;
         }
 
         lastPressTime = currentTime;
         pressCount++;
     }
-    if (pressCount === 6) {
-        console.log(touches); 
-        const timeDifferences = Object.values(touches); 
+
+    if (pressCount === 2) {
+        console.log(touches);
+        const timeDifferences = Object.values(touches);
         const total = timeDifferences.reduce((acc, curr) => acc + curr, 0);
         const mean = total / timeDifferences.length;
-        total_trials[turn].push(mean); 
-        const error = total_trials[turn][0] - total_trials[turn][1];
-        total_trials[turn].push(error);
-        console.log(`The time was ${total_trials[turn][0]} but the person got ${total_trials[turn][1]}, they have a ${Math.abs(total_trials[turn][2])} difference.`);
 
-        // Restarting values
+        
+        const userPixelsPerSecond = maxPosition / (mean/10);
+
+        total_trials[turn].push(userPixelsPerSecond); 
+        
+        const error = total_trials[turn][0] - total_trials[turn][1];
+        total_trials[turn].push(error); 
+
+        console.log(`The real pixels per second were ${total_trials[turn][0]}, but the user got ${total_trials[turn][1]}, they have a ${Math.abs(total_trials[turn][2])} difference.`);
+
+        
         touches = {};
         pressCount = 0;
         lastPressTime = null;
         turn++;
-        test.textContent = `Trial ${turn}/${maxTest}`;
-        instructions.textContent = "";
-        circle.setAttribute('cx', 50); // Reset circle position
-        buttonPressed = false; // Reset button pressed state
 
-        // After last round
-        if (turn === maxTest) {
+        clearInterval(interval);
+        circle.style.left = '0px';
+
+        
+        if (turn <= maxTest) {
+            test.textContent = `Prueba ${turn}/${maxTest}`;
+            instructions.textContent = "";
+            startTrial();
+        }
+
+        
+        if (turn > maxTest) {
             downloadCSV(total_trials);
             button.disabled = true;
             window.location.href = 'final.html';
         }
     }
+});
+
+button.addEventListener('click', () => {
+    startTrial(); 
 });
